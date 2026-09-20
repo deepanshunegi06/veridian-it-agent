@@ -15,6 +15,7 @@ steps whatever the model thinks.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -103,7 +104,10 @@ SCHEMAS: list[dict[str, Any]] = [
         "parameters": {
             "type": "object",
             "properties": {
-                "category": {"type": "string", "description": "hardware, access, software, network, email, security"},
+                "category": {
+                    "type": "string",
+                    "description": "hardware, access, software, network, email, security",
+                },
                 "summary": {"type": "string", "description": "One line an IT technician can act on."},
                 "priority": {"type": "string", "description": "low, normal, high or urgent"},
             },
@@ -124,7 +128,10 @@ SCHEMAS: list[dict[str, Any]] = [
                     "type": "string",
                     "description": "What a human has to decide, and why you could not.",
                 },
-                "to": {"type": "string", "description": "Who: Finance, Security, IT Security, a manager, IT lead."},
+                "to": {
+                    "type": "string",
+                    "description": "Who: Finance, Security, IT Security, a manager, IT lead.",
+                },
                 "cites": {
                     "type": "array",
                     "items": {"type": "string"},
@@ -171,8 +178,14 @@ def _reply_for(convo: Conversation, name: str, result: dict) -> str | None:
     return None
 
 
-def run(convo: Conversation) -> Conversation:
-    """Work the request until it is closed or the step budget runs out."""
+def run(convo: Conversation, on_event: Callable[[dict], None] | None = None) -> Conversation:
+    """Work the request until it is closed or the step budget runs out.
+
+    `on_event` receives every step as it happens. It exists so the browser can
+    watch the agent get refused and correct itself, which is the only honest way
+    to show that the guarantees in tools.py are real.
+    """
+    emit = on_event or (lambda _event: None)
     settings = get_settings()
     model = build_llm().bind_tools(SCHEMAS)
     messages: list[Any] = [
@@ -204,6 +217,7 @@ def run(convo: Conversation) -> Conversation:
             # something an employee should ever be shown.
             if text and not text.lstrip().startswith(("{", "[")):
                 convo.turns.append({"speaker": "agent", "text": text})
+                emit({"type": "say", "text": text})
             messages.append(
                 HumanMessage(
                     "That did not close the request. Call a tool: resolve, raise_ticket, "
@@ -223,13 +237,32 @@ def run(convo: Conversation) -> Conversation:
                 )
                 continue
 
+            emit({"type": "tool_start", "tool": name, "args": call["args"]})
             result = handler(convo, **call["args"])
             messages.append(ToolMessage(json.dumps(result), tool_call_id=call["id"]))
 
+            if refusal := result.get("refused"):
+                # The interesting event. A tool has just stopped the model doing
+                # something, and the next step is the model correcting itself.
+                emit(
+                    {
+                        "type": "refused",
+                        "tool": name,
+                        "reason": refusal,
+                        "detail": result.get("detail", ""),
+                        "conflict": result.get("conflict"),
+                        "clause": result.get("clause"),
+                    }
+                )
+            else:
+                emit({"type": "tool_result", "tool": name, "result": result})
+
             if reply := _reply_for(convo, name, result):
                 convo.turns.append({"speaker": "agent", "text": reply})
+                emit({"type": "say", "text": reply})
 
         if convo.is_closed():
+            emit({"type": "outcome", "outcome": convo.outcome})
             return convo
 
     # A request left open because the agent is waiting on the employee is not a
@@ -237,6 +270,7 @@ def run(convo: Conversation) -> Conversation:
     # it already (REQ-12, "waiting on employee response").
     if not convo.is_closed() and convo.followups_asked:
         convo.outcome = "waiting_on_employee"
+        emit({"type": "outcome", "outcome": convo.outcome})
         return convo
 
     # Out of steps with nothing decided. Say so rather than leaving it open --
@@ -248,11 +282,11 @@ def run(convo: Conversation) -> Conversation:
             "IT lead",
             convo.cited,
         )
-        convo.turns.append(
-            {
-                "speaker": "agent",
-                "text": "I couldn't work this one out from the policies I have. "
-                "I've passed it to the IT lead with what I found.",
-            }
+        text = (
+            "I couldn't work this one out from the policies I have. "
+            "I've passed it to the IT lead with what I found."
         )
+        convo.turns.append({"speaker": "agent", "text": text})
+        emit({"type": "say", "text": text})
+        emit({"type": "outcome", "outcome": convo.outcome})
     return convo
