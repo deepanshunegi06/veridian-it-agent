@@ -212,12 +212,15 @@ def run(convo: Conversation, on_event: Callable[[dict], None] | None = None) -> 
         if not calls:
             # Talking without acting. Allowed once as a greeting, but the request
             # is not finished, so push it back rather than ending here.
+            # Whatever the model wrote here is commentary, not an answer. It
+            # narrates its own tool calls -- "**Cites:** KB-08, **To:** Finance"
+            # -- and half-formed calls arrive this way too. The employee sees
+            # only what a tool produced, so this goes to the trace and no
+            # further. Nothing an employee reads is written directly by the
+            # model without a tool having approved it.
             text = (response.content or "").strip()
-            # A half-formed tool call sometimes arrives as content. It is not
-            # something an employee should ever be shown.
             if text and not text.lstrip().startswith(("{", "[")):
-                convo.turns.append({"speaker": "agent", "text": text})
-                emit({"type": "say", "text": text})
+                emit({"type": "thinking", "text": text})
             messages.append(
                 HumanMessage(
                     "That did not close the request. Call a tool: resolve, raise_ticket, "
