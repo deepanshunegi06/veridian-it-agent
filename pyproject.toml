@@ -1,0 +1,28 @@
+[project]
+name = "veridian-it-agent"
+version = "0.1.0"
+description = "An internal IT service desk agent for Veridian Corp."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic-settings>=2.6",
+    "langchain-core>=0.3",
+    "langchain-groq>=0.2",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+gemini = ["langchain-google-genai>=2.0"]
+openai = ["langchain-openai>=0.2"]
+dev = ["pytest>=8.3", "ruff>=0.8"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

@@ -1,0 +1,83 @@
+# The existing ticket queue, separate from the employee requests.
+#
+# Closed tickets are not work. They are precedent, and the data pack says so
+# explicitly -- "your agent may need them for context (e.g. precedent, prior
+# resolution pattern, consistency with past decisions)".
+#
+# Two of them carry real weight:
+#   TK-1043  a 3.2-year-old laptop replacement was approved, which is younger
+#            than the four-year refresh cycle in ASSET-01. Practice and policy
+#            disagree, and that is worth surfacing rather than resolving.
+#   TK-1050  an admin access request was rejected for want of a business
+#            justification, which is the answer to REQ-10 before anyone asks.
+
+- id: TK-1042
+  employee: R. Verma
+  summary: VPN credential expired
+  status: Resolved
+  open: false
+
+- id: TK-1043
+  employee: S. Iyer
+  summary: Laptop replacement (3.2 yrs old)
+  status: Approved - pending fulfillment
+  open: true
+  precedent: >-
+    A laptop younger than the four-year refresh cycle in ASSET-01 was approved
+    for replacement. Practice has followed KB-03's three-year rule at least
+    once.
+
+- id: TK-1044
+  employee: A. Khan
+  summary: Non-catalog software request
+  status: Pending Security review
+  open: true
+
+- id: TK-1045
+  employee: P. Joshi
+  summary: Mailbox quota increase
+  status: Approved at 35GB
+  open: false
+  precedent: >-
+    A quota increase above the 25GB default was approved at 35GB, inside the
+    50GB cap in KB-06.
+
+- id: TK-1046
+  employee: M. Das
+  summary: Printer paper jam, floor 2
+  status: Resolved
+  open: false
+
+- id: TK-1047
+  employee: K. Singh
+  summary: Home office equipment request
+  status: Pending Finance
+  open: true
+
+- id: TK-1048
+  employee: T. Rao
+  summary: Phishing email reported
+  status: Escalated to Security - under investigation
+  open: true
+
+- id: TK-1049
+  employee: V. Nambiar
+  summary: Password reset
+  status: Resolved
+  open: false
+
+- id: TK-1050
+  employee: J. Fernandes
+  summary: Admin access request
+  status: Rejected - no business justification provided
+  open: false
+  precedent: >-
+    An admin access request was rejected outright for want of a business
+    justification. The same question has to be asked before another one is
+    raised.
+
+- id: TK-1051
+  employee: L. Menon
+  summary: Guest Wi-Fi issued
+  status: Resolved
+  open: false
