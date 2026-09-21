@@ -1,0 +1,57 @@
+services:
+  - type: web
+    name: veridian-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -e .
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: LLM_PROVIDER
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENCODE_API_KEY
+        sync: false
+      - key: OPENCODE_BASE_URL
+        sync: false
+      - key: OPENCODE_SESSION_ID
+        sync: false
+      - key: MAX_STEPS
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: VERIDIAN_DB
+        sync: false
+      - key: ENV
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_ALGORITHM
+        sync: false
+      - key: JWT_EXPIRES_MINUTES
+        sync: false
+      - key: AUTH_COOKIE_NAME
+        sync: false
+      - key: SEED_DEMO_USERS
+        sync: false
+      - key: DEMO_EMPLOYEE_EMAIL
+        sync: false
+      - key: DEMO_AGENT_EMAIL
+        sync: false
+      - key: DEMO_ADMIN_EMAIL
+        sync: false
+      - key: DEMO_EMPLOYEE_PASSWORD
+        sync: false
+      - key: DEMO_AGENT_PASSWORD
+        sync: false
+      - key: DEMO_ADMIN_PASSWORD
+        sync: false

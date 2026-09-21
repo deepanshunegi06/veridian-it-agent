@@ -9,7 +9,7 @@ Service Agent). Author: Deepanshu Negi. Time budget: 6 hours.
 ## The claim
 
 The product's guarantees are functions that return errors, not instructions in a
-prompt. `resolve()` in [`app/tools.py`](app/tools.py) rejects an answer with no
+prompt. `resolve()` in [`backend/app/tools.py`](backend/app/tools.py) rejects an answer with no
 citation, an answer citing a clause that does not exist, an answer citing
 sources that contradict each other, an answer stating a figure none of the cited
 clauses contain, and an answer given for a decision that is not IT's to make.
@@ -25,8 +25,8 @@ next step. That correction loop is the thing worth watching in the demo.
 Needs Python 3.12 and a Groq API key (the free tier is enough).
 
 ```bash
-cp env.example .env        # then put your key in GROQ_API_KEY
-uv run uvicorn app.main:app --reload
+cp backend/env.example backend/.env        # then put your key in GROQ_API_KEY
+cd backend && uv run uvicorn app.main:app --reload
 ```
 
 That serves the API on `http://localhost:8000`. `http://localhost:8000/docs`
@@ -36,19 +36,28 @@ without a frontend.
 Without `uv`:
 
 ```bash
-python -m venv .venv && .venv/bin/pip install -e . && .venv/bin/uvicorn app.main:app --reload
+cd backend && python -m venv .venv && .venv/bin/pip install -e . && .venv/bin/uvicorn app.main:app --reload
 ```
 
 The default model is `openai/gpt-oss-120b` on Groq. Gemini and OpenAI work too
 by changing `LLM_PROVIDER` and `LLM_MODEL` in `.env`; see
-[`app/llm.py`](app/llm.py) and [`docs/ai-tools.md`](docs/ai-tools.md).
+[`backend/app/llm.py`](backend/app/llm.py) and [`docs/ai-tools.md`](docs/ai-tools.md).
 
-**Deployed link: _not deployed yet — URL goes here._**
+## Deploy
+
+Split layout: `backend/` runs on Render, `frontend/` on Vercel.
+
+- Render: Root Directory `backend`, build `pip install -e .`, start
+  `uvicorn app.main:app --host 0.0.0.0 --port $PORT` (see `render.yaml`),
+  health check `/healthz`. Set the env from `backend/env.example`, with
+  `CORS_ORIGINS` pointing at the Vercel URL.
+- Vercel: Root Directory `frontend`, framework Next.js. Only env needed is
+  `NEXT_PUBLIC_API_URL` pointing at the Render backend URL.
 
 ## What to try first
 
 Every request below is verbatim from the assignment data pack
-([`data/requests.yaml`](data/requests.yaml)). Run one with
+([`backend/data/requests.yaml`](backend/data/requests.yaml)). Run one with
 `POST /requests/REQ-01/run`, which streams the agent's work as server-sent
 events, then read `GET /requests/REQ-01` for the audit trail.
 
@@ -71,11 +80,11 @@ the model, so treat them as an observed run rather than a fixed property.
 ## Architecture in brief
 
 ```
-HTTP (app/main.py)        streams every step as it happens
-  -> loop (app/agent.py)  model picks a tool, refusals come back as material
-    -> tools (app/tools.py)  the rules, as functions that return errors
-      -> kb (app/kb.py)      the only door to policy text
-        -> data/*.yaml       the supplied pack, transcribed
+HTTP (backend/app/main.py)        streams every step as it happens
+  -> loop (backend/app/agent.py)  model picks a tool, refusals come back as material
+    -> tools (backend/app/tools.py)  the rules, as functions that return errors
+      -> kb (backend/app/kb.py)      the only door to policy text
+        -> backend/data/*.yaml       the supplied pack, transcribed
 ```
 
 Full version, with the request flow diagram and why the layers are split:

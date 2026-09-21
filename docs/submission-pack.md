@@ -76,9 +76,9 @@ directly write an answer into the system. The Python tools validate:
 
 | Source | Used for |
 | --- | --- |
-| `data/knowledge_base.yaml` | Eleven policy clauses, authorities, keywords and declared conflicts |
-| `data/requests.yaml` | Assignment request examples and seeded employee scenarios |
-| `data/tickets.yaml` | Existing ticket examples and precedent decisions |
+| `backend/data/knowledge_base.yaml` | Eleven policy clauses, authorities, keywords and declared conflicts |
+| `backend/data/requests.yaml` | Assignment request examples and seeded employee scenarios |
+| `backend/data/tickets.yaml` | Existing ticket examples and precedent decisions |
 | MongoDB Atlas | Users, conversations, tickets, events, counters, KB overrides |
 | Employee messages | The actual issue, ownership grounding and conversation history |
 | IT human messages | Human-in-the-loop replies and resolution events |
@@ -131,7 +131,7 @@ directly write an answer into the system. The Python tools validate:
 | --- | --- |
 | OpenCode Go | OpenAI-compatible inference API used by the FastAPI runtime |
 | Xiaomi MiMo-V2.5 | Agent inference model. It selects tools, requests policy searches, asks follow-ups, proposes cited answers, raises tickets or escalates |
-| LangChain tool binding | Connects MiMo-V2.5 to the typed Python tools in `app/agent.py` and `app/tools.py` |
+| LangChain tool binding | Connects MiMo-V2.5 to the typed Python tools in `backend/app/agent.py` and `backend/app/tools.py` |
 
 ### Runtime sequence
 

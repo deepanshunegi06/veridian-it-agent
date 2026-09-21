@@ -27,7 +27,7 @@ the coding assistants. Runtime secrets are kept in the ignored `.env` file.
   employee message, tool schemas and tool results. It decides whether to search
   policy, ask a follow-up, resolve, raise a ticket or escalate.
 - **LangChain tool binding** — connects MiMo-V2.5 to the typed Python tools in
-  `app/agent.py` and `app/tools.py`.
+  `backend/app/agent.py` and `backend/app/tools.py`.
 
 ## Runtime workflow
 

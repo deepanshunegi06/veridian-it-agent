@@ -2,8 +2,8 @@
 
 ## The claim this design is built around
 
-The guarantees live in `app/tools.py` as functions that return errors, not in
-`prompts/agent.md` as instructions. A prompt is a request. A function signature
+The guarantees live in `backend/app/tools.py` as functions that return errors, not in
+`backend/prompts/agent.md` as instructions. A prompt is a request. A function signature
 is a rule.
 
 This matters because the two things fail differently. If the prompt says "always
@@ -22,13 +22,13 @@ checks in `tools.py` would make it unsafe.
 ## Layers
 
 ```
-app/main.py     HTTP. Streams the run as server-sent events. Holds session state.
-app/agent.py    The loop. Tool schemas, step budget, event emission.
-app/tools.py    The five tools and their refusals. The rules live here.
-app/kb.py       Retrieval, declared conflicts, precedent lookup.
-data/*.yaml     The supplied data pack, transcribed.
-prompts/agent.md The system prompt, formatted per request.
-app/llm.py      Which model answers. One env var.
+backend/app/main.py     HTTP. Streams the run as server-sent events. Holds session state.
+backend/app/agent.py    The loop. Tool schemas, step budget, event emission.
+backend/app/tools.py    The five tools and their refusals. The rules live here.
+backend/app/kb.py       Retrieval, declared conflicts, precedent lookup.
+backend/data/*.yaml     The supplied data pack, transcribed.
+backend/prompts/agent.md The system prompt, formatted per request.
+backend/app/llm.py      Which model answers. One env var.
 ```
 
 They are separated along one line: **what a model can influence, and what it
@@ -42,13 +42,13 @@ for a request is not knowable before you read the request.
 The model cannot influence anything in `tools.py` and below. It cannot reach
 `kb.CLAUSES` except through `find_policy`. It cannot close a request except
 through `resolve`, `raise_ticket` or `escalate`. It cannot mark a conflict as
-resolved, because conflicts are declared in `data/knowledge_base.yaml` and
+resolved, because conflicts are declared in `backend/data/knowledge_base.yaml` and
 checked in code.
 
 Two smaller separations follow from that:
 
 **`kb.py` is the only door to policy text.** Nothing else reads
-`data/knowledge_base.yaml`. That is what makes "the agent shows the source it
+`backend/data/knowledge_base.yaml`. That is what makes "the agent shows the source it
 used" a property of the system and not a habit of the prompt — there is no path
 by which policy text reaches an answer without passing through a clause with an
 id.
@@ -177,7 +177,7 @@ reasoning for that is in [`assumptions.md`](assumptions.md#state).
 
 If you have ten minutes and want to understand this, read in this order:
 
-1. `app/tools.py` — the module docstring, then `resolve`. Everything else is plumbing around these.
-2. `app/kb.py` — why retrieval is keyword scoring and why conflicts are declared in data.
-3. `app/agent.py` — the loop, and what happens to a refusal.
-4. `prompts/agent.md` — the instructions, which the tools do not trust.
+1. `backend/app/tools.py` — the module docstring, then `resolve`. Everything else is plumbing around these.
+2. `backend/app/kb.py` — why retrieval is keyword scoring and why conflicts are declared in data.
+3. `backend/app/agent.py` — the loop, and what happens to a refusal.
+4. `backend/prompts/agent.md` — the instructions, which the tools do not trust.
