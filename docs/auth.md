@@ -6,6 +6,9 @@ Roles: `employee`, `it_agent`, `admin`.
 
 - `POST /auth/login {email, password}` -> `{user, access_token, token_type}`.
   Sets an HttpOnly cookie named `veridian_access` (from `AUTH_COOKIE_NAME`).
+- `POST /auth/demo-login {role}` -> same shape, no password involved. Dev
+  only (`ENV=dev` with `SEED_DEMO_USERS=true`, else 404); powers the
+  one-click demo buttons on the login page.
 - `GET /auth/me` -> `{id, email, name, role, is_active}`.
 - `POST /auth/logout` -> `{ok: true}` (clears the cookie).
 - `GET /auth/users`, `POST /auth/users`, `PATCH /auth/users/{id}` — admin only.

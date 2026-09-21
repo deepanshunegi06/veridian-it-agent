@@ -130,6 +130,31 @@ export async function login(email: string, password: string): Promise<User> {
   return data.user;
 }
 
+/** Demo roles available for one-click sign-in (dev/demo backends only). */
+export type DemoRole = "employee" | "it_agent" | "admin";
+
+/** Passwordless demo sign-in. The backend mints the session server-side for
+ * the configured demo account of the given role, so no password ever ships
+ * to the browser. Non-demo backends answer 404 (surfaced as ApiError). */
+export async function demoLogin(role: DemoRole): Promise<User> {
+  const res = await fetch(`${API_BASE}/auth/demo-login`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role }),
+  });
+  if (!res.ok) {
+    throw new ApiError(
+      "POST /auth/demo-login",
+      res.status,
+      await res.text().catch(() => ""),
+    );
+  }
+  const data = (await res.json()) as LoginResponse;
+  if (data?.access_token) setAccessToken(data.access_token);
+  return data.user;
+}
+
 export async function fetchMe(): Promise<User> {
   const res = await fetch(`${API_BASE}/auth/me`, {
     credentials: "include",

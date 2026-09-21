@@ -270,6 +270,45 @@ def login(body: LoginBody, response: Response) -> dict:
     return {"user": public_user(doc), "access_token": token, "token_type": "bearer"}
 
 
+class DemoLoginBody(BaseModel):
+    role: str = Field(pattern="^(employee|it_agent|admin)$")
+
+
+@router.post("/demo-login")
+def demo_login(body: DemoLoginBody, response: Response) -> dict:
+    """One-click sign-in as a demo account. Dev/demo only.
+
+    No password is accepted or returned: the session is minted server-side
+    for the configured demo email of the requested role, so the login page
+    can offer one-click buttons without ever shipping a password to the
+    browser. Refused with 404 unless ENV=dev with demo seeding enabled, so
+    deployments with real credentials cannot use it.
+    """
+    s = get_settings()
+    if str(getattr(s, "env", "dev")).lower() != "dev" or not bool(
+        getattr(s, "seed_demo_users", True)
+    ):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
+    email = {
+        "employee": s.demo_employee_email,
+        "it_agent": s.demo_agent_email,
+        "admin": s.demo_admin_email,
+    }[body.role]
+    try:
+        doc = db.get_user_by_email(email)
+    except Exception:
+        doc = None
+    # The stored role must still match: an admin who repurposed a demo email
+    # for another role must not be reachable through this shortcut.
+    if doc is None or str(doc.get("role", "")) != body.role:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Demo account not available")
+    if not doc.get("is_active", True):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Account disabled")
+    token = create_access_token(doc)
+    _set_auth_cookie(response, token)
+    return {"user": public_user(doc), "access_token": token, "token_type": "bearer"}
+
+
 @router.get("/me")
 def me(request: Request) -> dict:
     return current_user_public(request)
