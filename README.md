@@ -86,11 +86,16 @@ Full version, with the request flow diagram and why the layers are split:
 - [`docs/architecture.md`](docs/architecture.md) — the system and the process flow
 - [`docs/assumptions.md`](docs/assumptions.md) — what was supplied, what was inferred, what it cannot do
 - [`docs/ai-tools.md`](docs/ai-tools.md) — the AI tools used and what each was used for
+- [`docs/process-flow.md`](docs/process-flow.md) — the simple dashboard process-flow diagram
+- [`docs/submission-pack.md`](docs/submission-pack.md) — architecture, inputs, sources, assumptions and AI-tool summary
+- [`docs/demo-script.md`](docs/demo-script.md) — timed 15-minute demo, backup prompts and defence questions
 
 ## What it does not do
 
-It does not send email, touch a real ticketing system, or authenticate anyone.
-Tickets it raises exist for the life of the process. Retrieval is keyword
+It does not send email or touch a real external ticketing system. The dashboard
+does include demo JWT authentication, employee/IT/admin RBAC, MongoDB-backed
+conversation persistence, and a human handoff workflow. Its tickets are still
+application tickets rather than ServiceNow/Jira records. Retrieval is keyword
 scoring over eleven clauses, which is right for eleven clauses and wrong for a
-thousand. The limitations are listed properly in
-[`docs/assumptions.md`](docs/assumptions.md).
+thousand. The limitations are listed in [`docs/submission-pack.md`](docs/submission-pack.md)
+and [`docs/assumptions.md`](docs/assumptions.md).

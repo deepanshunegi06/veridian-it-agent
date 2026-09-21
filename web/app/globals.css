@@ -1,8 +1,24 @@
 @import "tailwindcss";
 
+/* Light mode is authoritative: `dark:` variants only apply under an explicit
+ * `.dark` class (which the app never sets), so OS/browser dark preference
+ * can never produce a dark UI. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-muted: #f1f5f9;
+  --border: #e2e8f0;
+  --muted: #64748b;
+  --muted-strong: #475569;
+  --accent: #4f46e5;
+  --accent-soft: #eef2ff;
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #b91c1c;
+  color-scheme: light;
 }
 
 @theme inline {
@@ -12,15 +28,132 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Subtle scrollbars for panes */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(148 163 184 / 0.5);
+  border-radius: 8px;
+}
+
+/* Typing-indicator dots (shared ChatThread run state). Subtle staggered
+ * rise/fade inside an incoming-style bubble; static dots when the user
+ * prefers reduced motion. */
+@keyframes aui-typing-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+.typing-dot {
+  animation: aui-typing-dot 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-dot {
+    animation: none;
+  }
+}
+
+/* Shared chat sizing contract (employee /help + IT /inbox/[id]).
+ * The chat pane uses available flex height — never a fixed viewport
+ * percentage. Each workspace root is constrained to the viewport minus the
+ * app header (h-14 = 3.5rem) at its multi-column breakpoint, keeping the
+ * existing symmetric page padding (py-6) inside that budget. Flex ancestors
+ * carry min-h-0/flex-1 so page headers, alerts and the composer keep their
+ * natural height while the grid + transcript viewport absorb the remainder;
+ * the transcript viewport stays the only scroll region and the composer stays
+ * pinned via shrink-0. Below the multi-column breakpoint the panes stack and
+ * the page scrolls, so .chat-box keeps a viewport-derived bound (viewport
+ * minus header and page padding) that shrinks on short viewports — no fixed
+ * min-height forces the outer page to grow. */
+.chat-workspace {
+  min-height: 0;
+}
+
+/* Shared KB sizing contract (/manage/kb only).
+ * The KB workspace uses available flex height on md+ — never a fixed viewport
+ * percentage. The workspace root is constrained to the viewport minus the app
+ * header (h-14 = 3.5rem), keeping the existing symmetric page padding (py-6)
+ * inside that budget. Flex ancestors carry min-h-0/flex-1 so the page
+ * header, alerts, search and add form keep their natural height (shrink-0)
+ * while the clause list viewport absorbs the remainder via min-h-0 flex-1
+ * overflow-y-auto. Below md the panes stack and the page scrolls normally,
+ * so no height bound applies there. Scoped to .kb-workspace only — no global
+ * body/html overflow change, other pages keep their own behavior. */
+.kb-workspace {
+  min-height: 0;
+}
+
+@media (min-width: 768px) {
+  .kb-workspace {
+    flex: 1 1 auto;
+    height: calc(100vh - 3.5rem);
+    height: calc(100dvh - 3.5rem);
+    max-height: calc(100vh - 3.5rem);
+    max-height: calc(100dvh - 3.5rem);
+    overflow: hidden;
+  }
+}
+
+.chat-box {
+  min-width: 0;
+  min-height: 0;
+  height: calc(100vh - 3.5rem - 3rem);
+  height: calc(100dvh - 3.5rem - 3rem);
+}
+
+@media (min-width: 768px) {
+  /* /help is two/three-column from md up: rail + chat (+ details). */
+  .chat-workspace-md {
+    flex: 1 1 auto;
+    height: calc(100vh - 3.5rem);
+    height: calc(100dvh - 3.5rem);
+    max-height: calc(100vh - 3.5rem);
+    max-height: calc(100dvh - 3.5rem);
+    overflow: hidden;
+  }
+  .chat-workspace-md .chat-box {
+    height: auto;
+    flex: 1 1 auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* /inbox/[id] is two-column from lg up: transcript + context. */
+  .chat-workspace-lg {
+    flex: 1 1 auto;
+    height: calc(100vh - 3.5rem);
+    height: calc(100dvh - 3.5rem);
+    max-height: calc(100vh - 3.5rem);
+    max-height: calc(100dvh - 3.5rem);
+    overflow: hidden;
+  }
+  .chat-workspace-lg .chat-box {
+    height: auto;
+    flex: 1 1 auto;
+  }
 }

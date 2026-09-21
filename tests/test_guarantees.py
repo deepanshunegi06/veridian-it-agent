@@ -157,3 +157,77 @@ def test_requests_that_belong_to_another_function_are_recognised(request_id, exp
     row = next(r for r in kb.REQUESTS if r["id"] == request_id)
     c = Conversation(request_id=row["id"], employee=row["employee"], text=row["text"])
     assert kb.clause(c.best_match).authority == expected_owner
+
+
+# --- grounded KB-03 / ASSET-01 material conflict --------------------------------
+
+
+def _laptop_convo(age_text: str) -> Conversation:
+    c = convo(age_text)
+    tools.find_policy(c, f"laptop replacement {age_text}")
+    return c
+
+
+def test_laptop_conflict_resolves_when_age_clearly_over_four():
+    c = _laptop_convo("My laptop won't turn on at all, it's completely dead, had it about 4.5 years now.")
+    out = tools.resolve(c, "You are eligible for a replacement.", ["KB-03", "ASSET-01"])
+    assert out.get("resolved") is True
+    assert c.outcome == "resolved"
+    assert c.ticket_status == "resolved"
+    assert getattr(c, "resolution_source", None) == "ai"
+    assert [a["tool"] for a in c.actions] == ["find_policy", "resolve"]
+    assert all(a["at"] for a in c.actions)
+
+
+def test_laptop_conflict_still_refuses_between_three_and_four():
+    c = _laptop_convo("My laptop won't turn on at all, it's completely dead, had it about 3.5 years now.")
+    for cites in (["KB-03"], ["ASSET-01"], ["KB-03", "ASSET-01"]):
+        out = tools.resolve(c, "You are eligible for a replacement.", cites)
+        assert out["refused"] == "conflicting_sources", f"{cites} slipped through"
+    assert c.outcome is None
+    assert not c.is_closed()
+
+
+def test_laptop_conflict_still_refuses_when_age_missing():
+    c = _laptop_convo("my laptop is dead")
+    for cites in (["KB-03"], ["ASSET-01"], ["KB-03", "ASSET-01"]):
+        out = tools.resolve(c, "You are eligible for a replacement.", cites)
+        assert out["refused"] == "conflicting_sources", f"{cites} slipped through"
+    assert c.outcome is None
+
+
+def test_verified_hardware_failure_does_not_bypass_finance_between_three_and_four():
+    c = _laptop_convo(
+        "My laptop had a verified hardware failure, it is 3.5 years old and completely dead."
+    )
+    out = tools.resolve(c, "You are eligible for a replacement.", ["KB-03", "ASSET-01"])
+    assert out["refused"] == "conflicting_sources"
+    assert c.outcome is None
+
+
+def test_unsupported_figure_still_refused_even_when_age_over_four():
+    c = _laptop_convo("My laptop is dead, had it about 4.5 years now.")
+    out = tools.resolve(c, "Laptops are replaced after 4.5 years.", ["KB-03", "ASSET-01"])
+    assert out["refused"] == "unsupported_figure"
+    assert c.outcome is None
+    ok = tools.resolve(c, "You are eligible for a replacement.", ["KB-03", "ASSET-01"])
+    assert ok.get("resolved") is True
+
+
+def test_followup_age_answer_can_ground_resolve_over_four():
+    c = convo("my laptop is dead")
+    tools.find_policy(c, "laptop replacement dead")
+    c.say("user", "It is 4.5 years old.", name="Aditi")
+    c.text = "It is 4.5 years old."
+    out = tools.resolve(c, "You are eligible for a replacement.", ["KB-03", "ASSET-01"])
+    assert out.get("resolved") is True
+
+
+def test_contradictory_ages_stay_conservative():
+    c = convo("my laptop is dead, had it 3.5 years")
+    tools.find_policy(c, "laptop replacement dead")
+    c.say("user", "Actually it is 4.5 years old.", name="Aditi")
+    c.text = "Actually it is 4.5 years old."
+    out = tools.resolve(c, "You are eligible for a replacement.", ["KB-03", "ASSET-01"])
+    assert out["refused"] == "conflicting_sources"
+    assert c.outcome is None

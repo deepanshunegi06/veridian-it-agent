@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "incremental": false,
+    "outDir": ".unit-tmp",
+    "rootDir": ".",
+    "plugins": []
+  },
+  "include": ["lib/__tests__/sse-abort.test.ts", "lib/__tests__/ticket-fallback.test.ts", "lib/api.ts", "lib/auth.ts"]
+}

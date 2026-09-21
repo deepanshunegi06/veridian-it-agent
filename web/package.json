@@ -6,9 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:unit": "tsc -p tsconfig.unit.json && node --test .unit-tmp/lib/__tests__/sse-abort.test.js .unit-tmp/lib/__tests__/ticket-fallback.test.js"
   },
   "dependencies": {
+    "@assistant-ui/react": "^0.15.21",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8"
