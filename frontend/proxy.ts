@@ -1,11 +1,15 @@
 /* Route protection for Veridian IT Desk (Next 16 `proxy` convention).
  *
- * Optimistic, cookie-presence gating only: the `veridian_access` HttpOnly
- * cookie set by POST /auth/login is checked, and the backend remains
- * authoritative for real authorization (roles, expiry, revocation).
+ * The `veridian_access` HttpOnly cookie is checked where visible, but the
+ * backend remains authoritative for real authorization (roles, expiry,
+ * revocation).
  *
- * - Anonymous users visiting /help, /inbox, /manage (or subpaths) are sent
- *   to /login?next=<original path>.
+ * - /help, /inbox, /manage are NOT redirected here on a missing cookie: on
+ *   a split-origin deployment the session cookie belongs to the API domain
+ *   and is invisible to this proxy, so a cookie-presence redirect would
+ *   bounce even signed-in (Bearer) sessions back to /login. Enforcement
+ *   lives client-side in <AuthGate> (Bearer-aware fetchMe) plus backend
+ *   401s, which route to /login?next=…&expired=1.
  * - Authenticated users visiting /login are sent back to `?next=` when it is
  *   a safe same-origin path, else to /help — unless the visit carries
  *   `?expired=1`, which means the client just detected an expired session.
@@ -24,14 +28,6 @@ import type { NextRequest } from "next/server";
 
 const AUTH_COOKIE = "veridian_access";
 
-const PROTECTED_PREFIXES = ["/help", "/inbox", "/manage"];
-
-function isProtected(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`),
-  );
-}
-
 function isSafeNext(value: string | null): boolean {
   if (!value) return false;
   return (
@@ -40,14 +36,23 @@ function isSafeNext(value: string | null): boolean {
 }
 
 export function proxy(request: NextRequest) {
-  const { pathname, search } = request.nextUrl;
+  const { pathname } = request.nextUrl;
   const hasSession = Boolean(request.cookies.get(AUTH_COOKIE)?.value);
 
-  if (!hasSession && isProtected(pathname)) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = `?next=${encodeURIComponent(`${pathname}${search}`)}`;
-    return NextResponse.redirect(url);
+  // Intentionally no cookie gate on /help, /inbox, /manage (see header):
+  // <AuthGate> enforces with the Bearer fallback the proxy cannot see.
+
+  if (pathname === "/") {
+    // Signed-out visits to the landing page would otherwise flash the
+    // in-app loading state before the client bounce to /login. Redirect
+    // server-side instead; signed-in users keep the client role routing.
+    if (!hasSession) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next();
   }
 
   if (hasSession && pathname === "/login") {
@@ -68,5 +73,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/help/:path*", "/inbox/:path*", "/manage/:path*", "/login"],
+  matcher: ["/", "/help/:path*", "/inbox/:path*", "/manage/:path*", "/login"],
 };

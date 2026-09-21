@@ -52,7 +52,7 @@ function friendlyLoginError(err: unknown): string {
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading, login } = useAuth();
+  const { user, loading, login, refresh } = useAuth();
   const rawNext = searchParams.get("next");
   const next = isSafeNextPath(rawNext) ? (rawNext as string) : null;
   const expired = searchParams.get("expired") === "1";
@@ -97,7 +97,13 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
     setDemoBusy(role);
     setError(null);
     try {
-      land(await demoLogin(role));
+      await demoLogin(role);
+      // demoLogin stores the token but leaves AuthProvider untouched, so
+      // re-resolve the session into context before landing: otherwise every
+      // page still sees user === null and bounces back to /login.
+      const me = await refresh();
+      if (!me) throw new Error("Sign-in succeeded but the session could not be verified.");
+      land(me);
     } catch (err) {
       setError(friendlyLoginError(err));
     } finally {

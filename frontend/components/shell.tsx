@@ -186,6 +186,28 @@ export function Shell({ children }: { children: ReactNode }) {
   // button around the login form.
   if (pathname === "/login") return <>{children}</>;
 
+  // While the session is unknown, show a neutral brand frame instead of the
+  // product chrome: the sidebar and account menu would otherwise flash with
+  // signed-out defaults on every cold load (including the / landing bounce
+  // to /login).
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+        <header className="shrink-0 border-b border-slate-200 bg-white/95">
+          <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-2 px-4">
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-indigo-600 text-xs font-bold text-white">
+              V
+            </span>
+            <span className="text-sm font-bold tracking-tight text-slate-900">
+              Veridian IT Desk
+            </span>
+          </div>
+        </header>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
       {/* Top bar */}
